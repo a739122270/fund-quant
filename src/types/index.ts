@@ -103,3 +103,37 @@ export interface BacktestResult {
   totalCashFromSells: number
   totalCycles: number
 }
+
+/** 组合中单只基金的配置 */
+export interface PortfolioFundConfig {
+  code: string
+  name: string
+  monthlyAmount: number
+  config: BacktestConfig
+}
+
+/** 组合回测参数 */
+export interface PortfolioConfig {
+  initialCapital: number
+  monthlyAvailable: number
+  funds: PortfolioFundConfig[]
+}
+
+/** 单只基金的回测结果 */
+export interface FundResult {
+  code: string
+  name: string
+  result: BacktestResult
+}
+
+/** 组合回测结果 */
+export interface PortfolioResult {
+  config: PortfolioConfig
+  fundResults: FundResult[]
+  dailyValues: DailyValue[]
+  totalInvested: number
+  finalValue: number
+  totalReturn: number
+  annualReturn: number
+  maxDrawdown: number
+}

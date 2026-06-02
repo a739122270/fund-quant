@@ -160,27 +160,31 @@ export default function PortfolioBacktest() {
           )}
         </div>
 
-        {/* 右侧 */}
-        <div className="main-area" style={{ display: 'flex', flexDirection: 'column', gap: 16, width: '100%' }}>
-          {loading && <div className="card" style={{ textAlign: 'center', padding: 40 }}>回测计算中...</div>}
-          {error && <div className="card" style={{ borderLeft: '4px solid #e53e3e' }}><pre style={{ color: '#e53e3e', margin: 0, fontSize: 13 }}>{error}</pre></div>}
-          {result && (
-            <>
-              <div className="metrics-grid">
-                <div className="metric-card"><div className="label">总收益率</div><div className={`value ${result.totalReturn >= 0 ? 'positive' : 'negative'}`}>{result.totalReturn >= 0 ? '+' : ''}{result.totalReturn.toFixed(2)}%</div></div>
-                <div className="metric-card"><div className="label">年化收益率</div><div className={`value ${result.annualReturn >= 0 ? 'positive' : 'negative'}`}>{result.annualReturn >= 0 ? '+' : ''}{result.annualReturn.toFixed(2)}%</div></div>
-                <div className="metric-card"><div className="label">组合总资产</div><div className="value neutral">{'¥' + Math.round(result.finalValue).toLocaleString()}</div></div>
-                <div className="metric-card"><div className="label">最大回撤</div><div className="value negative">{result.maxDrawdown.toFixed(2)}%</div></div>
+        {/* 右侧：结果 + AI */}
+        <div style={{ display: 'flex', gap: 16, flex: 1, minWidth: 0 }}>
+          <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {loading && <div className="card" style={{ textAlign: 'center', padding: 40 }}>回测计算中...</div>}
+            {error && <div className="card" style={{ borderLeft: '4px solid #e53e3e' }}><pre style={{ color: '#e53e3e', margin: 0, fontSize: 13 }}>{error}</pre></div>}
+            {result && (
+              <>
+                <div className="metrics-grid">
+                  <div className="metric-card"><div className="label">总收益率</div><div className={`value ${result.totalReturn >= 0 ? 'positive' : 'negative'}`}>{result.totalReturn >= 0 ? '+' : ''}{result.totalReturn.toFixed(2)}%</div></div>
+                  <div className="metric-card"><div className="label">年化收益率</div><div className={`value ${result.annualReturn >= 0 ? 'positive' : 'negative'}`}>{result.annualReturn >= 0 ? '+' : ''}{result.annualReturn.toFixed(2)}%</div></div>
+                  <div className="metric-card"><div className="label">组合总资产</div><div className="value neutral">{'¥' + Math.round(result.finalValue).toLocaleString()}</div></div>
+                  <div className="metric-card"><div className="label">最大回撤</div><div className="value negative">{result.maxDrawdown.toFixed(2)}%</div></div>
+                </div>
+                <div className="card"><FundContribution fundResults={result.fundResults} /></div>
+              </>
+            )}
+            {!result && !loading && !error && (
+              <div className="card" style={{ textAlign: 'center', padding: 60 }}>
+                <p style={{ color: '#999', fontSize: 14 }}>配置组合并开始回测后查看结果</p>
               </div>
-              <div className="card"><FundContribution fundResults={result.fundResults} /></div>
-            </>
-          )}
-          {!result && !loading && !error && (
-            <div className="card" style={{ textAlign: 'center', padding: 60 }}>
-              <p style={{ color: '#999', fontSize: 14 }}>配置组合并开始回测后查看结果</p>
-            </div>
-          )}
-          {/* <AIChat portfolioContext={JSON.stringify({ initialCapital, monthlyAvailable, funds })} /> */}
+            )}
+          </div>
+          <div style={{ width: 360, flexShrink: 0 }}>
+            <AIChat portfolioContext={JSON.stringify({ initialCapital, monthlyAvailable, funds })} />
+          </div>
         </div>
       </div>
     </div>

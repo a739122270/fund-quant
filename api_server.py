@@ -18,6 +18,13 @@ import uvicorn
 app = FastAPI(title="ETF Data API")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
+# 生产环境：提供前端静态文件
+import os
+_dist_dir = os.path.join(os.path.dirname(__file__), "dist")
+if os.path.exists(_dist_dir):
+    from fastapi.staticfiles import StaticFiles
+    app.mount("/", StaticFiles(directory=_dist_dir, html=True), name="frontend")
+
 SCRIPT_DIR = os.path.dirname(__file__)
 OUTPUT_DIRS = [
     os.path.join(SCRIPT_DIR, "public", "data", "prices"),

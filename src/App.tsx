@@ -29,7 +29,7 @@ export default function App() {
         </div>
       </header>
 
-      {tab === 'single' ? (
+      <div style={{ display: tab === 'single' ? 'block' : 'none' }}>
         <div className="app-content">
           <div className="sidebar">
             <FundSelector value={selectedCode} onChange={setSelectedCode} />
@@ -53,11 +53,12 @@ export default function App() {
             )}
           </div>
         </div>
-      ) : (
+      </div>
+      <div style={{ display: tab === 'portfolio' ? 'block' : 'none' }}>
         <div className="app-content" style={{ flexDirection: 'column' }}>
           <PortfolioBacktest />
         </div>
-      )}
+      </div>
 
       <div className="disclaimer">
         <strong>风险提示：</strong>

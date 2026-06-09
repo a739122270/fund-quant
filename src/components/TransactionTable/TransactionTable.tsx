@@ -3,7 +3,7 @@ import { TradeRecord } from '../../types'
 import { formatMoney, formatPercent } from '../../utils/format'
 
 interface Props {
-  trades: TradeRecord[]
+  trades: (TradeRecord & { fundName?: string })[]
 }
 
 export default function TransactionTable({ trades }: Props) {
@@ -21,6 +21,7 @@ export default function TransactionTable({ trades }: Props) {
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
           <thead>
             <tr style={{ borderBottom: '2px solid #eee' }}>
+              {trades[0]?.fundName && <th style={thStyle}>基金</th>}
               <th style={thStyle}>日期</th>
               <th style={thStyle}>操作</th>
               <th style={thStyle}>净值</th>
@@ -39,6 +40,7 @@ export default function TransactionTable({ trades }: Props) {
                 borderBottom: '1px solid #f0f0f0',
                 background: t.action === 'sell' ? '#fff5f5' : undefined,
               }}>
+                {t.fundName && <td style={tdStyle}>{t.fundName}</td>}
                 <td style={tdStyle}>{t.date}</td>
                 <td style={{ ...tdStyle, textAlign: 'center' }}>
                   <span style={{

@@ -136,4 +136,6 @@ export interface PortfolioResult {
   totalReturn: number
   annualReturn: number
   maxDrawdown: number
+  sharpeRatio: number
+  volatility: number
 }

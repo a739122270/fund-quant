@@ -18,13 +18,6 @@ import uvicorn
 app = FastAPI(title="ETF Data API")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
-# 生产环境：提供前端静态文件
-import os
-_dist_dir = os.path.join(os.path.dirname(__file__), "dist")
-if os.path.exists(_dist_dir):
-    from fastapi.staticfiles import StaticFiles
-    app.mount("/", StaticFiles(directory=_dist_dir, html=True), name="frontend")
-
 SCRIPT_DIR = os.path.dirname(__file__)
 OUTPUT_DIRS = [
     os.path.join(SCRIPT_DIR, "public", "data", "prices"),
@@ -129,14 +122,22 @@ def chat(request: dict):
         funds_info.append(f"- {f.get('name', '')}({f.get('code', '')}): 每月分配 {f.get('monthlyAmount', 0)} 元, 策略={f.get('config', {}).get('strategy', 'dca')}")
     funds_text = "\n".join(funds_info) if funds_info else "暂无"
 
-    system_prompt = f"""你是一个专业的基金投资顾问助手。用户的持仓和策略如下：
+    system_prompt = f"""你是一位专业的基金投资顾问。请以JSON格式输出分析结果，包含以下字段：
+- summary: 一句话总体评价
+- score: 综合评分（0-100的整数）
+- strengths: 优势点列表（字符串数组，最多3条）
+- risks: 风险点列表（数组，每条包含 level 为 "high"/"medium"/"low"，description 为字符串）
+- suggestions: 改进建议列表（字符串数组，最多3条）
+- asset_allocation: 资产配置评估（字符串）
+- fund_analysis: 逐只基金分析列表（数组，每条包含 fund_name、evaluation、suggestion）
 
-初始资金: {portfolio.get('initialCapital', 0)} 元
-每月可用: {portfolio.get('monthlyAvailable', 0)} 元
-持仓基金:
+用户组合信息：
+- 初始资金：{portfolio.get('initialCapital', 0)} 元
+- 每月可用：{portfolio.get('monthlyAvailable', 0)} 元
+- 持仓基金：
 {funds_text}
 
-请根据以上信息，结合你的专业知识，回答用户的问题。可以给出具体的分析和建议。"""
+只输出JSON，不要包含其他文字。"""
 
     api_key = get_deepseek_key()
     if not api_key:
@@ -149,6 +150,7 @@ def chat(request: dict):
             json={
                 "model": "deepseek-chat",
                 "messages": [{"role": "system", "content": system_prompt}] + [{"role": m["role"], "content": m["content"]} for m in messages],
+                "response_format": {"type": "json_object"},
                 "stream": False,
             },
             timeout=60,

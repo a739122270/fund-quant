@@ -6,6 +6,7 @@ import FundContribution from './Portfolio/FundContribution'
 import FundSearchResults from './Portfolio/FundSearchResults'
 import AIChat from './Portfolio/AIChat'
 import ConfigPanel from '../components/ConfigPanel/ConfigPanel'
+import TransactionTable from '../components/TransactionTable/TransactionTable'
 
 // 缓存回测结果，切换 Tab 回来不丢失
 let _cachedResult: PortfolioResult | null = null
@@ -65,7 +66,7 @@ export default function PortfolioBacktest() {
     const preset = getETFList().find(e => e.code === code)
     const name = fundName || (preset ? preset.name : `ETF-${code}`)
     const cfg: BacktestConfig = {
-      etfCode: code, strategy: 'dca', startDate: '2020-01-01', endDate: new Date().toISOString().slice(0, 10),
+      etfCode: code, strategy: 'dca', startDate: '2023-06-01', endDate: new Date().toISOString().slice(0, 10),
       amount: 1000, frequency: 'monthly', dayOfWeek: 1, dayOfMonth: 10, feeRate: 0.0015,
     }
     setFunds([...funds, { code, name, monthlyAmount: cfg.amount, config: cfg }])
@@ -168,12 +169,19 @@ export default function PortfolioBacktest() {
             {result && (
               <>
                 <div className="metrics-grid">
-                  <div className="metric-card"><div className="label">总收益率</div><div className={`value ${result.totalReturn >= 0 ? 'positive' : 'negative'}`}>{result.totalReturn >= 0 ? '+' : ''}{result.totalReturn.toFixed(2)}%</div></div>
+                  <div className="metric-card"><div className="label">累计收益率</div><div className={`value ${result.totalReturn >= 0 ? 'positive' : 'negative'}`}>{result.totalReturn >= 0 ? '+' : ''}{result.totalReturn.toFixed(2)}%</div></div>
                   <div className="metric-card"><div className="label">年化收益率</div><div className={`value ${result.annualReturn >= 0 ? 'positive' : 'negative'}`}>{result.annualReturn >= 0 ? '+' : ''}{result.annualReturn.toFixed(2)}%</div></div>
-                  <div className="metric-card"><div className="label">组合总资产</div><div className="value neutral">{'¥' + Math.round(result.finalValue).toLocaleString()}</div></div>
+                  <div className="metric-card"><div className="label">年化波动率</div><div className="value neutral">{result.volatility.toFixed(2)}%</div></div>
+                  <div className="metric-card"><div className="label">夏普比率</div><div className="value neutral">{result.sharpeRatio.toFixed(2)}</div></div>
                   <div className="metric-card"><div className="label">最大回撤</div><div className="value negative">{result.maxDrawdown.toFixed(2)}%</div></div>
+                  <div className="metric-card"><div className="label">累计投入</div><div className="value neutral">{'¥' + Math.round(result.totalInvested).toLocaleString()}</div></div>
+                  <div className="metric-card"><div className="label">组合总资产</div><div className="value neutral">{'¥' + Math.round(result.finalValue).toLocaleString()}</div></div>
+                  <div className="metric-card"><div className="label">总收益</div><div className={`value ${(result.finalValue - result.totalInvested) >= 0 ? 'positive' : 'negative'}`}>{'¥' + Math.round(result.finalValue - result.totalInvested).toLocaleString()}</div></div>
                 </div>
                 <div className="card"><FundContribution fundResults={result.fundResults} /></div>
+                <TransactionTable trades={result.fundResults.flatMap(f =>
+                  f.result.trades.map(t => ({ ...t, fundName: f.name }))
+                ).sort((a, b) => a.date.localeCompare(b.date))} />
               </>
             )}
             {!result && !loading && !error && (

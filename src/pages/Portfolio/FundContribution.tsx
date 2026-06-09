@@ -13,6 +13,7 @@ export default function FundContribution({ fundResults }: { fundResults: FundRes
           <thead>
             <tr style={{ borderBottom: '2px solid #eee' }}>
               <th style={thL}>基金</th>
+              <th style={thR}>总投入</th>
               <th style={thR}>总资产</th>
               <th style={thR}>收益</th>
               <th style={thR}>收益率</th>
@@ -27,6 +28,7 @@ export default function FundContribution({ fundResults }: { fundResults: FundRes
               return (
                 <tr key={f.code} style={{ borderBottom: '1px solid #f0f0f0' }}>
                   <td style={tdL}>{f.name}</td>
+                  <td style={tdR}>¥{Math.round(f.result.totalInvested).toLocaleString()}</td>
                   <td style={tdR}>¥{Math.round(f.result.finalValue).toLocaleString()}</td>
                   <td style={{ ...tdR, color: profit >= 0 ? '#e53e3e' : '#38a169' }}>{profit >= 0 ? '+' : ''}¥{Math.round(profit).toLocaleString()}</td>
                   <td style={{ ...tdR, color: ret >= 0 ? '#e53e3e' : '#38a169' }}>{ret >= 0 ? '+' : ''}{ret.toFixed(2)}%</td>

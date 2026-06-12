@@ -107,8 +107,8 @@ export default function ConfigPanel({ etfCode, onRun, loading, initialConfig, ca
         </div>
       </div>
       <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
-        <div style={{ flex: 1 }}><label style={lS}>开始时间</label><input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} style={{ ...iS, width: '100%' }} /></div>
-        <div style={{ flex: 1 }}><label style={lS}>结束时间</label><input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} style={{ ...iS, width: '100%' }} /></div>
+        <div style={{ flex: 1 }}><label style={lS}>开始时间</label><input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} style={{ ...iS, width: '100%', fontSize: 11 }} /></div>
+        <div style={{ flex: 1 }}><label style={lS}>结束时间</label><input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} style={{ ...iS, width: '100%', fontSize: 11 }} /></div>
       </div>
       {strategy === 'dca' && (
         <>

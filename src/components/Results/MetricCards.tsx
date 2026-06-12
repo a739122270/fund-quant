@@ -16,7 +16,6 @@ export default function MetricCards({ result }: Props) {
     { label: '累计投入', value: formatMoney(r.totalInvested), cls: 'neutral' },
     { label: '最终价值', value: formatMoney(r.finalValue), cls: r.finalValue >= r.totalInvested ? 'positive' : 'negative' },
     { label: '总收益', value: formatMoney(r.finalValue - r.totalInvested), cls: r.finalValue >= r.totalInvested ? 'positive' : 'negative' },
-    { label: '交易次数', value: `${r.totalTrades} 次`, cls: 'neutral' },
     ...(r.totalCycles > 0 ? [
       { label: '止盈次数', value: `${r.totalCycles} 次`, cls: 'positive' },
       { label: '已变现收益', value: formatMoney(r.totalCashFromSells), cls: 'positive' },

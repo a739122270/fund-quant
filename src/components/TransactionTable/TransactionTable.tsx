@@ -90,11 +90,12 @@ export default function TransactionTable({ trades }: Props) {
 
 const thStyle: React.CSSProperties = {
   padding: '8px 6px',
-  textAlign: 'right',
+  textAlign: 'center',
   fontWeight: 600,
   color: '#555',
   fontSize: 11,
   whiteSpace: 'nowrap',
+  border: '1px solid #e8e8e8',
 }
 
 const tdStyle: React.CSSProperties = {
@@ -103,6 +104,7 @@ const tdStyle: React.CSSProperties = {
   whiteSpace: 'nowrap',
   fontFamily: 'monospace',
   fontSize: 12,
+  border: '1px solid #f0f0f0',
 }
 
 const pageBtnStyle: React.CSSProperties = {

@@ -66,7 +66,7 @@ export default function FundSelector({ value, onChange }: Props) {
         value={search} onChange={e => setSearch(e.target.value)}
         placeholder="搜索已加载的基金..." />
 
-      <div style={{ maxHeight: 200, overflow: 'auto', marginBottom: 8 }}>
+      <div style={{ maxHeight: 200, overflow: 'auto', overflowX: 'auto', whiteSpace: 'nowrap', marginBottom: 8 }}>
         {filtered.length === 0
           ? <div style={{ fontSize: 12, color: '#999', padding: 12, textAlign: 'center' }}>未找到匹配基金</div>
           : filtered.map(etf => (
@@ -78,7 +78,7 @@ export default function FundSelector({ value, onChange }: Props) {
             borderLeft: value === etf.code ? '3px solid #2563eb' : '3px solid transparent',
             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
           }}>
-            <span><span style={{ fontFamily: 'monospace', marginRight: 8 }}>{etf.code}</span>{etf.name}</span>
+            <span style={{ whiteSpace: 'nowrap' }}><span style={{ fontFamily: 'monospace', marginRight: 8 }}>{etf.code}</span>{etf.name}</span>
             {editMode && <span onClick={(e) => { e.stopPropagation(); handleDelete(etf.code) }} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 20, height: 20, borderRadius: '50%', background: '#e53e3e', color: '#fff', cursor: 'pointer', fontSize: 14, lineHeight: 1 }}>–</span>}
           </div>
         ))}

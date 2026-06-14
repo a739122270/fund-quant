@@ -174,13 +174,21 @@ export default function AIChat({ portfolioContext }: Props) {
           api_key: apiKey,
         }),
       })
-      if (!resp.ok) throw new Error('请求失败')
+      if (!resp.ok) {
+        let detail = ''
+        try { const err = await resp.json(); detail = err.detail || '' } catch {}
+        if (resp.status === 500) throw new Error('AI 服务异常：' + (detail || '请检查 API Key 是否正确'))
+        if (resp.status === 502) throw new Error('DeepSeek 异常：' + (detail || '请检查 API Key 是否正确，或稍后重试'))
+        throw new Error('请求失败 (' + resp.status + ')' + (detail ? '：' + detail : ''))
+      }
       const data = await resp.json()
       const raw = data.choices?.[0]?.message?.content
       const reply = typeof raw === 'string' ? raw : (raw ? JSON.stringify(raw) : '暂无回复')
       setMessages(prev => [...prev, { role: 'assistant', content: reply }])
     } catch (e: any) {
-      setMessages(prev => [...prev, { role: 'assistant', content: `⚠️ ${e.message || '网络错误'}` }])
+      let msg = e.message || '未知错误'
+      if (e.name === 'TypeError' && e.message === 'Failed to fetch') msg = '网络连接失败，请检查网络后重试'
+      setMessages(prev => [...prev, { role: 'assistant', content: `⚠️ ${msg}` }])
     }
     finally { setLoading(false) }
   }

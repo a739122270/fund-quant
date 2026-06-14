@@ -156,7 +156,15 @@ def chat(request: dict):
             timeout=60,
         )
         if not resp.ok:
-            raise HTTPException(status_code=502, detail=f"DeepSeek API 错误: {resp.status_code}")
+            err_msg = resp.text[:300]
+            try:
+                eb = resp.json()
+                em = eb.get('error', {}).get('message', '') or eb.get('message', '')
+                if em: err_msg = em
+            except: pass
+            if resp.status_code in (401, 403):
+                raise HTTPException(status_code=401, detail=err_msg)
+            raise HTTPException(status_code=502, detail=err_msg)
         return resp.json()
     except HTTPException:
         raise

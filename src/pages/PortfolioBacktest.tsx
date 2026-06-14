@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Component } from 'react'
 import { PortfolioConfig, PortfolioFundConfig, PortfolioResult, BacktestConfig } from '../types'
 import { getETFList } from '../data/etf-list'
 import { runPortfolioBacktest } from '../engine/portfolio'
+import { shouldRefresh } from '../utils/csv'
 import FundContribution from './Portfolio/FundContribution'
 import FundSearchResults from './Portfolio/FundSearchResults'
 import AIChat from './Portfolio/AIChat'
@@ -9,6 +10,15 @@ import ConfigPanel from '../components/ConfigPanel/ConfigPanel'
 import TransactionTable from '../components/TransactionTable/TransactionTable'
 
 // 缓存回测结果，切换 Tab 回来不丢失
+class ErrBd extends Component<{ children: React.ReactNode }, { e: boolean }> {
+  constructor(p: any) { super(p); this.state = { e: false } }
+  static getDerivedStateFromError() { return { e: true } }
+  render() {
+    if (this.state.e) return <div className="card" style={{ padding: 20, color: '#999', fontSize: 13 }}>AI 模块加载出错，刷新页面重试</div>
+    return this.props.children
+  }
+}
+
 let _cachedResult: PortfolioResult | null = null
 
 const STORAGE_KEY = 'portfolio_config'
@@ -32,6 +42,7 @@ export default function PortfolioBacktest() {
   const [funds, setFunds] = useState<PortfolioFundConfig[]>(saved.funds ?? [])
   const [selectedIdx, setSelectedIdx] = useState<number | null>(saved.selectedIdx ?? null)
   const [loading, setLoading] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState('')
   const [result, setResult] = useState<PortfolioResult | null>(_cachedResult)
   const [showAdd, setShowAdd] = useState(false)
@@ -85,13 +96,14 @@ export default function PortfolioBacktest() {
   const handleRun = async () => {
     if (funds.length === 0) { setError('请至少添加一只基金'); return }
     if (totalAllocated > monthlyAvailable) { setError('基础每期金额总和超过每月可用金额'); return }
-    setLoading(true); setError(''); setResult(null)
+    const needRefresh = funds.some(f => shouldRefresh(f.code))
+    setLoading(true); setRefreshing(needRefresh); setError(''); setResult(null)
     try {
       const cfgs: PortfolioConfig = { initialCapital, monthlyAvailable, funds }
       const r = await runPortfolioBacktest(cfgs)
       setResult(r)
     } catch (e: any) { setError(e.message || '回测失败') }
-    finally { setLoading(false) }
+    finally { setLoading(false); setRefreshing(false) }
   }
 
   return (
@@ -164,7 +176,7 @@ export default function PortfolioBacktest() {
         {/* 右侧：结果 + AI */}
         <div style={{ display: 'flex', gap: 16, flex: 1, minWidth: 0 }}>
           <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
-            {loading && <div className="card" style={{ textAlign: 'center', padding: 40 }}>回测计算中...</div>}
+            {loading && <div className="card" style={{ textAlign: 'center', padding: 40 }}>{refreshing ? '正在拉取最新数据...请稍等' : '回测计算中...'}</div>}
             {error && <div className="card" style={{ borderLeft: '4px solid #e53e3e' }}><pre style={{ color: '#e53e3e', margin: 0, fontSize: 13 }}>{error}</pre></div>}
             {result && (
               <>
@@ -191,7 +203,7 @@ export default function PortfolioBacktest() {
             )}
           </div>
           <div style={{ width: 360, flexShrink: 0 }}>
-            <AIChat portfolioContext={JSON.stringify({ initialCapital, monthlyAvailable, funds })} />
+            <ErrBd><AIChat portfolioContext={JSON.stringify({ initialCapital, monthlyAvailable, funds })} /></ErrBd>
           </div>
         </div>
       </div>

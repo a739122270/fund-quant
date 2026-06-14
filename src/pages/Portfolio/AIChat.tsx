@@ -1,6 +1,4 @@
 import { useState, useRef, useEffect } from 'react'
-import ReactMarkdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -32,7 +30,8 @@ interface AnalysisData {
   fund_analysis: FundAnalysisItem[]
 }
 
-function tryParseJSON(text: string): AnalysisData | null {
+function tryParseJSON(text: any): AnalysisData | null {
+  if (!text || typeof text !== 'string') return null
   const match = text.match(/\{[\s\S]*\}/)
   if (!match) return null
   try {
@@ -43,29 +42,34 @@ function tryParseJSON(text: string): AnalysisData | null {
 }
 
 function AnalysisCard({ data }: { data: AnalysisData }) {
-  const scoreColor = data.score >= 80 ? '#38a169' : data.score >= 60 ? '#d69e2e' : '#e53e3e'
+  const score = Number(data.score) || 0
+  const scoreColor = score >= 80 ? '#38a169' : score >= 60 ? '#d69e2e' : '#e53e3e'
+  const strengths = Array.isArray(data.strengths) ? data.strengths : []
+  const risks = Array.isArray(data.risks) ? data.risks : []
+  const suggestions = Array.isArray(data.suggestions) ? data.suggestions : []
+  const fundAnalysis = Array.isArray(data.fund_analysis) ? data.fund_analysis : []
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
       {/* 综合评分 */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-        <div style={{ fontSize: 36, fontWeight: 700, color: scoreColor, lineHeight: 1 }}>{data.score}</div>
+        <div style={{ fontSize: 36, fontWeight: 700, color: scoreColor, lineHeight: 1 }}>{score}</div>
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 12, color: '#999' }}>综合评分</div>
-          <div style={{ fontSize: 13, color: '#555', lineHeight: 1.5 }}>{data.summary}</div>
+          <div style={{ fontSize: 13, color: '#555', lineHeight: 1.5 }}>{data.summary ?? ''}</div>
         </div>
       </div>
 
       {/* 优势 */}
-      {data.strengths.length > 0 && (
+      {strengths.length > 0 && (
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, fontWeight: 600, color: '#2f855a', marginBottom: 6 }}>
             <span>📈</span> 优势
           </div>
           <ul style={{ margin: 0, padding: 0, listStyle: 'none' }}>
-            {data.strengths.map((s, i) => (
+            {strengths.map((s, i) => (
               <li key={i} style={{ fontSize: 13, color: '#555', display: 'flex', gap: 6, padding: '2px 0' }}>
-                <span style={{ color: '#38a169' }}>•</span> {s}
+                <span style={{ color: '#38a169' }}>•</span> {String(s || '')}
               </li>
             ))}
           </ul>
@@ -73,13 +77,13 @@ function AnalysisCard({ data }: { data: AnalysisData }) {
       )}
 
       {/* 风险 */}
-      {data.risks.length > 0 && (
+      {risks.length > 0 && (
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, fontWeight: 600, color: '#c53030', marginBottom: 6 }}>
             <span>⚠️</span> 风险提示
           </div>
           <ul style={{ margin: 0, padding: 0, listStyle: 'none' }}>
-            {data.risks.map((r, i) => (
+            {risks.map((r, i) => (
               <li key={i} style={{ fontSize: 13, display: 'flex', gap: 6, padding: '3px 0' }}>
                 <span style={{
                   padding: '1px 6px', borderRadius: 4, fontSize: 11, fontWeight: 600, whiteSpace: 'nowrap', lineHeight: '18px',
@@ -88,7 +92,7 @@ function AnalysisCard({ data }: { data: AnalysisData }) {
                 }}>
                   {r.level === 'high' ? '高' : r.level === 'medium' ? '中' : '低'}
                 </span>
-                <span style={{ color: '#555' }}>{r.description}</span>
+                <span style={{ color: '#555' }}>{String(r.description || '')}</span>
               </li>
             ))}
           </ul>
@@ -96,15 +100,15 @@ function AnalysisCard({ data }: { data: AnalysisData }) {
       )}
 
       {/* 建议 */}
-      {data.suggestions.length > 0 && (
+      {suggestions.length > 0 && (
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, fontWeight: 600, color: '#2b6cb0', marginBottom: 6 }}>
             <span>💡</span> 改进建议
           </div>
           <ul style={{ margin: 0, padding: 0, listStyle: 'none' }}>
-            {data.suggestions.map((s, i) => (
+            {suggestions.map((s, i) => (
               <li key={i} style={{ fontSize: 13, color: '#555', display: 'flex', gap: 6, padding: '2px 0' }}>
-                <span style={{ color: '#3182ce' }}>{i + 1}.</span> {s}
+                <span style={{ color: '#3182ce' }}>{i + 1}.</span> {String(s || '')}
               </li>
             ))}
           </ul>
@@ -117,22 +121,22 @@ function AnalysisCard({ data }: { data: AnalysisData }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, fontWeight: 600, color: '#6b46c1', marginBottom: 6 }}>
             <span>🏷️</span> 资产配置评估
           </div>
-          <p style={{ fontSize: 13, color: '#555', margin: 0 }}>{data.asset_allocation}</p>
+          <p style={{ fontSize: 13, color: '#555', margin: 0 }}>{String(data.asset_allocation)}</p>
         </div>
       )}
 
       {/* 单只基金分析 */}
-      {data.fund_analysis && data.fund_analysis.length > 0 && (
+      {fundAnalysis.length > 0 && (
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, fontWeight: 600, color: '#555', marginBottom: 6 }}>
             <span>🔍</span> 单只基金分析
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {data.fund_analysis.map((f, i) => (
-              <div key={i} style={{ border: '1px solid #e8e8e8', borderRadius: 8, padding: 10 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4, color: '#333' }}>{f.fund_name}</div>
-                <div style={{ fontSize: 13, color: '#666', marginBottom: 2 }}>📊 {f.evaluation}</div>
-                <div style={{ fontSize: 13, color: '#3182ce' }}>💡 {f.suggestion}</div>
+            {fundAnalysis.map((f, i) => (
+              <div key={i} style={{ border: '1px solid #e8e8e8', borderRadius: 8, padding: 10, overflowWrap: 'break-word', wordBreak: 'break-word' }}>
+                <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4, color: '#333' }}>{f.fund_name ?? ''}</div>
+                <div style={{ fontSize: 13, color: '#666', marginBottom: 2, overflowWrap: 'break-word', wordBreak: 'break-word' }}>📊 {f.evaluation ?? ''}</div>
+                <div style={{ fontSize: 13, color: '#3182ce', overflowWrap: 'break-word', wordBreak: 'break-word' }}>💡 {f.suggestion ?? ''}</div>
               </div>
             ))}
           </div>
@@ -142,10 +146,14 @@ function AnalysisCard({ data }: { data: AnalysisData }) {
   )
 }
 
+const API_KEY_STORAGE = 'ai_api_key'
+
 export default function AIChat({ portfolioContext }: Props) {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
+  const [apiKey, setApiKey] = useState(() => localStorage.getItem(API_KEY_STORAGE) || '')
+  const [showKeyInput, setShowKeyInput] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
@@ -163,11 +171,13 @@ export default function AIChat({ portfolioContext }: Props) {
         body: JSON.stringify({
           messages: [...messages, userMsg],
           portfolio: JSON.parse(portfolioContext || '{}'),
+          api_key: apiKey,
         }),
       })
       if (!resp.ok) throw new Error('请求失败')
       const data = await resp.json()
-      const reply = data.choices?.[0]?.message?.content || '暂无回复'
+      const raw = data.choices?.[0]?.message?.content
+      const reply = typeof raw === 'string' ? raw : (raw ? JSON.stringify(raw) : '暂无回复')
       setMessages(prev => [...prev, { role: 'assistant', content: reply }])
     } catch (e: any) {
       setMessages(prev => [...prev, { role: 'assistant', content: `⚠️ ${e.message || '网络错误'}` }])
@@ -178,12 +188,30 @@ export default function AIChat({ portfolioContext }: Props) {
   const renderContent = (text: string) => {
     const parsed = tryParseJSON(text)
     if (parsed) return <AnalysisCard data={parsed} />
-    return <div className="ai-markdown"><ReactMarkdown remarkPlugins={[remarkGfm]}>{text}</ReactMarkdown></div>
+    return <div style={{ whiteSpace: 'pre-wrap', fontSize: 13, lineHeight: 1.6 }}>{text}</div>
   }
 
   return (
     <div className="card" style={{ display: 'flex', flexDirection: 'column', height: 520 }}>
-      <div className="card-title">AI 投资顾问</div>
+      <div className="card-title" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <span>AI 投资顾问</span>
+        <span onClick={() => setShowKeyInput(!showKeyInput)} style={{ fontSize: 12, color: '#999', cursor: 'pointer', userSelect: 'none' }}>
+          {showKeyInput ? '收起' : apiKey ? '🔑 已配置' : '⚙ 设置 Key'}
+        </span>
+      </div>
+
+      {showKeyInput && (
+        <div style={{ marginBottom: 10 }}>
+          <input
+            type="password"
+            value={apiKey}
+            onChange={e => { setApiKey(e.target.value); localStorage.setItem(API_KEY_STORAGE, e.target.value) }}
+            placeholder="输入你的 DeepSeek API Key..."
+            style={{ width: '100%', padding: '8px 10px', border: '1px solid #d9d9d9', borderRadius: 6, fontSize: 12, boxSizing: 'border-box' }}
+          />
+          <div style={{ fontSize: 10, color: '#999', marginTop: 4 }}>Key 仅在本地存储，不会上传到服务器</div>
+        </div>
+      )}
 
       <div style={{ flex: 1, overflow: 'auto', marginBottom: 8, fontSize: 13, lineHeight: 1.6 }}>
         {messages.length === 0 && (
@@ -217,18 +245,6 @@ export default function AIChat({ portfolioContext }: Props) {
           background: loading ? '#93c5fd' : '#2563eb', color: '#fff', cursor: 'pointer', fontSize: 13,
         }}>发送</button>
       </div>
-
-      <style>{`
-        .ai-markdown h3 {
-          margin: 16px 0 8px; font-size: 14px; font-weight: 600; color: #222;
-          padding-bottom: 4px; border-bottom: 1px solid #e8e8e8;
-        }
-        .ai-markdown h3:first-child { margin-top: 0; }
-        .ai-markdown p { margin: 6px 0; }
-        .ai-markdown ul, .ai-markdown ol { margin: 6px 0; padding-left: 20px; }
-        .ai-markdown li { margin: 4px 0; }
-        .ai-markdown strong { font-weight: 600; color: #111; }
-      `}</style>
     </div>
   )
 }

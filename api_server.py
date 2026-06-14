@@ -139,9 +139,9 @@ def chat(request: dict):
 
 只输出JSON，不要包含其他文字。"""
 
-    api_key = get_deepseek_key()
+    api_key = request.get("api_key", "") or get_deepseek_key()
     if not api_key:
-        raise HTTPException(status_code=500, detail="未配置 API Key")
+        raise HTTPException(status_code=500, detail="未配置 API Key，请在 AI 投资顾问面板输入你的 DeepSeek API Key")
 
     try:
         resp = requests.post(

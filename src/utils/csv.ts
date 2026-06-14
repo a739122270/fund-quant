@@ -24,9 +24,36 @@ export function parseNavCSV(text: string): NavRecord[] {
 
 /** 根据代码加载 CSV 文件 */
 export async function loadNavData(code: string): Promise<NavRecord[]> {
-  const url = `/data/prices/${code}.csv`
+  const url = `${import.meta.env.BASE_URL}data/prices/${code}.csv`
   const resp = await fetch(url)
   if (!resp.ok) throw new Error(`加载 ${code} 数据失败: ${resp.status}`)
   const text = await resp.text()
   return parseNavCSV(text)
+}
+
+const FETCH_COOLDOWN_MS = 30 * 60 * 1000
+
+/** 检查某只基金是否需要刷新（距上次拉取不到 5 分钟则跳过） */
+export function shouldRefresh(code: string): boolean {
+  const key = `etf_last_fetch_${code}`
+  const lastFetch = localStorage.getItem(key)
+  if (lastFetch) {
+    const elapsed = Date.now() - parseInt(lastFetch, 10)
+    if (elapsed < FETCH_COOLDOWN_MS) return false
+  }
+  return true
+}
+
+/** 拉取单只基金最新数据，更新 CSV 并记录时间 */
+export async function refreshFundData(code: string): Promise<void> {
+  const resp = await fetch(`/api/fetch/${code}`, { method: 'POST' })
+  if (!resp.ok) throw new Error(`拉取 ${code} 数据失败`)
+  localStorage.setItem(`etf_last_fetch_${code}`, Date.now().toString())
+}
+
+/** 批量刷新基金数据 */
+export async function refreshAllFundData(codes: string[]): Promise<void> {
+  const toRefresh = codes.filter(shouldRefresh)
+  if (toRefresh.length === 0) return
+  await Promise.all(toRefresh.map(code => refreshFundData(code)))
 }

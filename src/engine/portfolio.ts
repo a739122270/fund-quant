@@ -1,12 +1,16 @@
 import { PortfolioConfig, PortfolioResult, DailyValue, FundResult } from '../types'
 import { runBacktest } from './strategies'
-import { loadNavData } from '../utils/csv'
+import { loadNavData, refreshAllFundData } from '../utils/csv'
 
 /** 运行组合回测 */
 export async function runPortfolioBacktest(config: PortfolioConfig): Promise<PortfolioResult> {
   if (config.funds.length === 0) throw new Error('请至少添加一只基金')
   if (config.initialCapital < 0) throw new Error('初始金额不能为负数')
   if (config.monthlyAvailable < 0) throw new Error('每月可用金额不能为负数')
+
+  // 先刷新所有基金数据
+  const codes = config.funds.map(f => f.code)
+  await refreshAllFundData(codes)
 
   // 逐只基金运行回测
   const fundResults: FundResult[] = []

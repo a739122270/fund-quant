@@ -12,7 +12,7 @@ import { BacktestConfig } from './types'
 export default function App() {
   const [tab, setTab] = useState<'single' | 'portfolio'>('single')
   const [selectedCode, setSelectedCode] = useState('510300')
-  const { loading, error, result, run } = useBacktest()
+  const { loading, refreshing, error, result, run } = useBacktest()
 
   const handleRun = (config: BacktestConfig) => run(config)
 
@@ -36,7 +36,7 @@ export default function App() {
             <ConfigPanel etfCode={selectedCode} onRun={handleRun} loading={loading} />
           </div>
           <div className="main-area">
-            {loading && <div className="card" style={{ textAlign: 'center', padding: 40 }}><p style={{ color: '#666' }}>回测计算中，请稍候...</p></div>}
+            {loading && <div className="card" style={{ textAlign: 'center', padding: 40 }}><p style={{ color: '#666' }}>{refreshing ? '正在拉取最新数据...请稍等' : '回测计算中，请稍候...'}</p></div>}
             {error && <div className="card" style={{ borderLeft: '4px solid #e53e3e' }}><pre style={{ color: '#e53e3e', margin: 0, fontSize: 13, whiteSpace: 'pre-wrap', fontFamily: 'inherit' }}>{error}</pre></div>}
             {result && !loading && (
               <>

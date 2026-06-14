@@ -20,7 +20,7 @@ export default function App() {
     <div className="app">
       <header className="app-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
-          <h1>ETF 基金回测工具</h1>
+          <h1>场外基金回测工具</h1>
           <p style={{ margin: '4px 0 0', fontSize: 13, opacity: 0.8 }}>选择基金 → 配置策略 → 查看历史收益表现</p>
         </div>
         <div style={{ display: 'flex', gap: 4, background: 'rgba(255,255,255,0.1)', borderRadius: 6, padding: 3 }}>

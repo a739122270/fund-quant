@@ -173,6 +173,7 @@ function AnalysisCard({ data }: { data: AnalysisData }) {
 
 const API_KEY_STORAGE = 'ai_api_key'
 const FREE_NOTICE = 'AI 调用需消耗 Token，目前仅支持每日免费使用 10 次，请理解～\n也可输入自己的 DeepSeek API Key 不限次数。'
+const API_BASE = import.meta.env.DEV ? '/api' : 'https://buhaore.cn/api'
 
 export default function AIChat({ portfolioContext }: Props) {
   const [messages, setMessages] = useState<Message[]>([])
@@ -207,7 +208,7 @@ export default function AIChat({ portfolioContext }: Props) {
     }
 
     try {
-      const resp = await fetch('/api/chat', {
+      const resp = await fetch(`${API_BASE}/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

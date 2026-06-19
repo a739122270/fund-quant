@@ -1,0 +1,6 @@
+{
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "https://buhaore.cn/api/$1" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}

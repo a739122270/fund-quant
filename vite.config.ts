@@ -2,7 +2,7 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
 export default defineConfig({
-  base: '/fund-quant/',
+  base: process.env.VERCEL ? '/' : '/fund-quant/',
   plugins: [react()],
   server: {
     proxy: {

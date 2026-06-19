@@ -54,15 +54,22 @@ def fetch_fund_nav(code: str):
         "pageIndex": 1,
         "pageSize": 10000,
     }
-    headers = {"Referer": "https://fundf10.eastmoney.com/"}
-    resp = requests.get(url, params=params, headers=headers, timeout=15)
+    headers = {
+        "Referer": "https://fundf10.eastmoney.com/",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+    }
+    resp = requests.get(url, params=params, headers=headers, timeout=30)
     resp.encoding = "utf-8"
-    # 提取 JSON 部分
-    match = re.search(r'jQuery\((.*)\)', resp.text, re.DOTALL)
+    text = resp.text.strip()
+
+    # 兼容 jQuery12345(...) 或 jQuery(...) 格式
+    match = re.search(r'jQuery(?:\d+)?\((.*)\)\s*$', text, re.DOTALL)
     if not match:
-        raise Exception("解析净值数据失败")
+        raise Exception(f"解析净值数据失败，响应前100字: {text[:100]}")
     data = json.loads(match.group(1))
-    records = data.get("Data", {}).get("LSJZList", [])
+    if data is None:
+        raise Exception("API 返回 null")
+    records = (data.get("Data") or {}).get("LSJZList") or []
     if not records:
         raise HTTPException(status_code=400, detail="该基金代码无数据")
     result = []
@@ -199,7 +206,7 @@ def chat(request: dict):
             "https://api.deepseek.com/v1/chat/completions",
             headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
             json={
-                "model": "deepseek-chat",
+                "model": os.environ.get("DEEPSEEK_MODEL", "deepseek-chat"),
                 "messages": [{"role": "system", "content": system_prompt}] + [{"role": m["role"], "content": m["content"]} for m in messages],
                 "response_format": {"type": "json_object"},
                 "stream": False,

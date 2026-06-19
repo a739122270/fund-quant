@@ -30,14 +30,11 @@ export async function loadNavData(code: string): Promise<NavRecord[]> {
     const text = await resp.text()
     return parseNavCSV(text)
   }
-  // CSV 不存在（Vercel 环境），调 API 拿 JSON
-  const apiResp = await fetch(`/api/data/${code}`)
+  // CSV 不存在（Vercel 环境），调后端拿 CSV 再解析
+  const apiResp = await fetch(`/api/nav/${code}`)
   if (!apiResp.ok) throw new Error(`加载 ${code} 数据失败: ${apiResp.status}`)
-  const records: any[] = await apiResp.json()
-  return records
-    .map(r => ({ date: r.date, nav: parseFloat(r.close) }))
-    .filter(r => !isNaN(r.nav) && r.nav > 0)
-    .sort((a, b) => a.date.localeCompare(b.date))
+  const csvText = await apiResp.text()
+  return parseNavCSV(csvText)
 }
 
 const FETCH_COOLDOWN_MS = 30 * 60 * 1000

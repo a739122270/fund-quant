@@ -122,9 +122,13 @@ def fetch_fund(code: str):
     if len(code) != 6 or not code.isdigit():
         raise HTTPException(status_code=400, detail="基金代码必须是 6 位数字")
     try:
-        df = ak.fund_open_fund_info_em(symbol=code, indicator="单位净值走势", period="成立来")
-        if df.empty:
-            raise HTTPException(status_code=400, detail="该基金代码无数据")
+        try:
+            df = ak.fund_open_fund_info_em(symbol=code, indicator="单位净值走势", period="成立来")
+        except Exception as e:
+            print(f"akshare 第一次失败: {e}，尝试不带 period")
+            df = ak.fund_open_fund_info_em(symbol=code, indicator="单位净值走势")
+        if df is None or df.empty:
+            raise HTTPException(status_code=400, detail=f"该基金代码无数据")
         df = df.rename(columns={"净值日期": "date", "单位净值": "nav", "累计净值": "acc_nav", "日增长率": "daily_return"})
         df["date"] = df["date"].astype(str)
         df = df.sort_values("date")

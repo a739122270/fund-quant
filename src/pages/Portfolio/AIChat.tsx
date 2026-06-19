@@ -32,7 +32,7 @@ interface AnalysisData {
 
 // ─── 每日免费调用计数（后台记录，不展示） ──────────────────────
 // ★ 改次数改这里就行
-const FREE_LIMIT = 10
+const FREE_LIMIT = 20
 const FREE_COUNT_KEY = 'ai_free_count'
 const FREE_DATE_KEY = 'ai_free_date'
 
@@ -172,7 +172,7 @@ function AnalysisCard({ data }: { data: AnalysisData }) {
 }
 
 const API_KEY_STORAGE = 'ai_api_key'
-const FREE_NOTICE = 'AI 调用需消耗 Token，目前仅支持每日免费使用 10 次，请理解～\n也可输入自己的 DeepSeek API Key 不限次数。'
+const FREE_NOTICE = `AI 调用需消耗 Token，目前仅支持每日免费使用 ${FREE_LIMIT} 次，请理解～\n也可输入自己的 DeepSeek API Key 不限次数。`
 
 export default function AIChat({ portfolioContext }: Props) {
   const [messages, setMessages] = useState<Message[]>([])
@@ -199,7 +199,7 @@ export default function AIChat({ portfolioContext }: Props) {
         setShowKeyInput(true)
         setMessages(prev => [...prev, {
           role: 'assistant',
-          content: '⚠️ 今日免费 10 次已用完 🙏\n\n' + FREE_NOTICE
+          content: `⚠️ 今日免费 ${FREE_LIMIT} 次已用完 🙏\n\n` + FREE_NOTICE
         }])
         setLoading(false)
         return

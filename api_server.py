@@ -27,6 +27,61 @@ OUTPUT_DIRS = [
 _fund_list_cache = None
 _fund_list_cache_time = 0
 
+# ─── Vercel KV (Redis) ──────────────────────────────────────────
+KV_REST_URL = os.environ.get("KV_REST_API_URL", "")
+KV_REST_TOKEN = os.environ.get("KV_REST_API_TOKEN", "")
+KV_AVAILABLE = bool(KV_REST_URL and KV_REST_TOKEN)
+
+
+def kv_set(key: str, value, expire: int = 86400):
+    if not KV_AVAILABLE:
+        return False
+    try:
+        requests.post(
+            f"{KV_REST_URL}/set/{key}",
+            params={"data": json.dumps(value), "ex": str(expire)},
+            headers={"Authorization": f"Bearer {KV_REST_TOKEN}"},
+            timeout=5,
+        )
+        return True
+    except Exception as e:
+        print(f"KV set 失败: {e}")
+        return False
+
+
+def kv_get(key: str):
+    if not KV_AVAILABLE:
+        return None
+    try:
+        resp = requests.get(
+            f"{KV_REST_URL}/get/{key}",
+            headers={"Authorization": f"Bearer {KV_REST_TOKEN}"},
+            timeout=5,
+        )
+        data = resp.json()
+        if data.get("result"):
+            return json.loads(data["result"])
+        return None
+    except Exception as e:
+        print(f"KV get 失败: {e}")
+        return None
+
+
+def kv_exists(key: str) -> bool:
+    if not KV_AVAILABLE:
+        return False
+    try:
+        resp = requests.get(
+            f"{KV_REST_URL}/exists/{key}",
+            headers={"Authorization": f"Bearer {KV_REST_TOKEN}"},
+            timeout=5,
+        )
+        return resp.json().get("result", 0) > 0
+    except Exception as e:
+        print(f"KV exists 失败: {e}")
+        return False
+# ────────────────────────────────────────────────────────────────
+
 
 def get_fund_list():
     """获取全量场外基金列表（缓存 1 小时）"""
@@ -76,14 +131,20 @@ def fetch_fund(code: str):
         records = []
         for _, r in df.iterrows():
             records.append({"date": r["date"], "open": "", "close": r.get("nav", ""), "high": "", "low": "", "volume": "", "amount": ""})
+        # 存到 KV (Vercel)
+        kv_set(f"fund_data:{code}", records)
+        # 写 CSV（本地开发用，Vercel 只读会静默失败）
         for out_dir in OUTPUT_DIRS:
-            os.makedirs(out_dir, exist_ok=True)
-            fieldnames = ["date", "open", "close", "high", "low", "volume", "amount"]
-            with open(os.path.join(out_dir, f"{code}.csv"), "w", newline="", encoding="utf-8") as f:
-                w = csv.DictWriter(f, fieldnames=fieldnames)
-                w.writeheader()
-                for r in records:
-                    w.writerow({k: r.get(k, "") for k in fieldnames})
+            try:
+                os.makedirs(out_dir, exist_ok=True)
+                fieldnames = ["date", "open", "close", "high", "low", "volume", "amount"]
+                with open(os.path.join(out_dir, f"{code}.csv"), "w", newline="", encoding="utf-8") as f:
+                    w = csv.DictWriter(f, fieldnames=fieldnames)
+                    w.writeheader()
+                    for r in records:
+                        w.writerow({k: r.get(k, "") for k in fieldnames})
+            except OSError:
+                pass  # Vercel 只读文件系统，忽略
         return {"code": code, "records": len(records), "firstDate": records[0]["date"], "lastDate": records[-1]["date"]}
     except HTTPException:
         raise
@@ -91,10 +152,34 @@ def fetch_fund(code: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.get("/api/data/{code}")
+def get_fund_data(code: str):
+    """返回基金净值 JSON 数据"""
+    # 先查 KV (Vercel)
+    data = kv_get(f"fund_data:{code}")
+    if data:
+        return data
+    # 再查 CSV 文件（本地）
+    for out_dir in OUTPUT_DIRS:
+        filepath = os.path.join(out_dir, f"{code}.csv")
+        if os.path.exists(filepath):
+            with open(filepath, encoding="utf-8") as f:
+                reader = csv.DictReader(f)
+                return [row for row in reader]
+    raise HTTPException(status_code=404, detail=f"基金 {code} 暂无数据，请先拉取")
+
+
 @app.get("/api/check/{code}")
 def check_fund(code: str):
-    filepath = os.path.join(OUTPUT_DIRS[0], f"{code}.csv")
-    return {"code": code, "exists": os.path.exists(filepath)}
+    """检查基金数据是否存在"""
+    # KV 或 CSV 任一存在即可
+    if kv_exists(f"fund_data:{code}"):
+        return {"code": code, "exists": True}
+    for out_dir in OUTPUT_DIRS:
+        filepath = os.path.join(out_dir, f"{code}.csv")
+        if os.path.exists(filepath):
+            return {"code": code, "exists": True}
+    return {"code": code, "exists": False}
 
 
 def get_deepseek_key():

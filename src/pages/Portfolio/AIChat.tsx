@@ -207,7 +207,7 @@ export default function AIChat({ portfolioContext }: Props) {
     }
 
     try {
-      const resp = await fetch('https://buhaore.cn/api/chat', {
+      const resp = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

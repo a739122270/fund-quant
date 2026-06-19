@@ -122,13 +122,9 @@ def fetch_fund(code: str):
     if len(code) != 6 or not code.isdigit():
         raise HTTPException(status_code=400, detail="基金代码必须是 6 位数字")
     try:
-        try:
-            df = ak.fund_open_fund_info_em(symbol=code, indicator="单位净值走势", period="成立来")
-        except Exception as e:
-            print(f"akshare 第一次失败: {e}，尝试不带 period")
-            df = ak.fund_open_fund_info_em(symbol=code, indicator="单位净值走势")
+        df = ak.fund_open_fund_info_em(symbol=code, indicator="单位净值走势", period="成立来")
         if df is None or df.empty:
-            raise HTTPException(status_code=400, detail=f"该基金代码无数据")
+            raise HTTPException(status_code=400, detail=f"akshare 返回空数据，请确认基金代码 {code} 是否正确")
         df = df.rename(columns={"净值日期": "date", "单位净值": "nav", "累计净值": "acc_nav", "日增长率": "daily_return"})
         df["date"] = df["date"].astype(str)
         df = df.sort_values("date")
@@ -154,6 +150,28 @@ def fetch_fund(code: str):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/debug")
+def debug():
+    """调试：检查 akshare 能否正常工作"""
+    import sys
+    info = {
+        "python": sys.version,
+        "akshare": ak.__version__ if hasattr(ak, "__version__") else "未知",
+        "kv_available": KV_AVAILABLE,
+    }
+    # 尝试拉取一小段数据
+    try:
+        df = ak.fund_open_fund_info_em(symbol="000001", indicator="单位净值走势", period="成立来")
+        if df is not None and not df.empty:
+            info["test_fetch"] = f"成功，{len(df)} 行"
+            info["test_last"] = df.tail(1).to_dict("records")[0]["净值日期"] + " " + str(df.tail(1).to_dict("records")[0]["单位净值"])
+        else:
+            info["test_fetch"] = f"返回空数据，type={type(df).__name__}"
+    except Exception as e:
+        info["test_fetch"] = f"异常: {type(e).__name__}: {e}"
+    return info
 
 
 @app.get("/api/data/{code}")

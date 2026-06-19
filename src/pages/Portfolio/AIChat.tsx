@@ -30,6 +30,31 @@ interface AnalysisData {
   fund_analysis: FundAnalysisItem[]
 }
 
+// ─── 每日免费调用计数（后台记录，不展示） ──────────────────────
+// ★ 改次数改这里就行
+const FREE_LIMIT = 10
+const FREE_COUNT_KEY = 'ai_free_count'
+const FREE_DATE_KEY = 'ai_free_date'
+
+function getFreeUsed(): number {
+  const date = localStorage.getItem(FREE_DATE_KEY)
+  const today = new Date().toISOString().slice(0, 10)
+  if (date !== today) {
+    localStorage.setItem(FREE_DATE_KEY, today)
+    localStorage.setItem(FREE_COUNT_KEY, '0')
+    return 0
+  }
+  return Number(localStorage.getItem(FREE_COUNT_KEY)) || 0
+}
+
+function markFreeUsed(): number {
+  const used = getFreeUsed() + 1
+  localStorage.setItem(FREE_COUNT_KEY, String(used))
+  return used
+}
+
+// ─────────────────────────────────────────────────────────────
+
 function tryParseJSON(text: any): AnalysisData | null {
   if (!text || typeof text !== 'string') return null
   const match = text.match(/\{[\s\S]*\}/)
@@ -69,7 +94,7 @@ function AnalysisCard({ data }: { data: AnalysisData }) {
           <ul style={{ margin: 0, padding: 0, listStyle: 'none' }}>
             {strengths.map((s, i) => (
               <li key={i} style={{ fontSize: 13, color: '#555', display: 'flex', gap: 6, padding: '2px 0' }}>
-                <span style={{ color: '#38a169' }}>•</span> {String(s || '')}
+                <span style={{ color: '#38a169' }}>&bull;</span> {String(s || '')}
               </li>
             ))}
           </ul>
@@ -147,6 +172,7 @@ function AnalysisCard({ data }: { data: AnalysisData }) {
 }
 
 const API_KEY_STORAGE = 'ai_api_key'
+const FREE_NOTICE = 'AI 调用需消耗 Token，目前仅支持每日免费使用 10 次，请理解～\n也可输入自己的 DeepSeek API Key 不限次数。'
 
 export default function AIChat({ portfolioContext }: Props) {
   const [messages, setMessages] = useState<Message[]>([])
@@ -154,6 +180,7 @@ export default function AIChat({ portfolioContext }: Props) {
   const [loading, setLoading] = useState(false)
   const [apiKey, setApiKey] = useState(() => localStorage.getItem(API_KEY_STORAGE) || '')
   const [showKeyInput, setShowKeyInput] = useState(false)
+  const [freeUsed, setFreeUsed] = useState(() => getFreeUsed())
   const bottomRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
@@ -163,6 +190,21 @@ export default function AIChat({ portfolioContext }: Props) {
     const userMsg: Message = { role: 'user', content: input }
     setMessages(prev => [...prev, userMsg])
     setInput(''); setLoading(true)
+
+    // 免费次数校验
+    if (!apiKey) {
+      const currentUsed = getFreeUsed()
+      if (currentUsed >= FREE_LIMIT) {
+        setFreeUsed(currentUsed)
+        setShowKeyInput(true)
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          content: '⚠️ 今日免费 10 次已用完 🙏\n\n' + FREE_NOTICE
+        }])
+        setLoading(false)
+        return
+      }
+    }
 
     try {
       const resp = await fetch('/api/chat', {
@@ -185,6 +227,12 @@ export default function AIChat({ portfolioContext }: Props) {
       const raw = data.choices?.[0]?.message?.content
       const reply = typeof raw === 'string' ? raw : (raw ? JSON.stringify(raw) : '暂无回复')
       setMessages(prev => [...prev, { role: 'assistant', content: reply }])
+
+      // 免费调用成功后才计数
+      if (!apiKey) {
+        const newUsed = markFreeUsed()
+        setFreeUsed(newUsed)
+      }
     } catch (e: any) {
       let msg = e.message || '未知错误'
       if (e.name === 'TypeError' && e.message === 'Failed to fetch') msg = '网络连接失败，请检查网络后重试'
@@ -203,21 +251,23 @@ export default function AIChat({ portfolioContext }: Props) {
     <div className="card" style={{ display: 'flex', flexDirection: 'column', height: 520 }}>
       <div className="card-title" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <span>AI 投资顾问</span>
-        <span onClick={() => setShowKeyInput(!showKeyInput)} style={{ fontSize: 12, color: '#999', cursor: 'pointer', userSelect: 'none' }}>
+        <span onClick={() => setShowKeyInput(!showKeyInput)} style={{ fontSize: 12, color: '#2563eb', cursor: 'pointer', userSelect: 'none', fontWeight: 500 }}>
           {showKeyInput ? '收起' : apiKey ? '🔑 已配置' : '⚙ 设置 Key'}
         </span>
       </div>
 
       {showKeyInput && (
-        <div style={{ marginBottom: 10 }}>
+        <div style={{ marginBottom: 10, padding: 10, background: '#f0f7ff', borderRadius: 8, border: '1px solid #bddbff' }}>
           <input
             type="password"
             value={apiKey}
             onChange={e => { setApiKey(e.target.value); localStorage.setItem(API_KEY_STORAGE, e.target.value) }}
             placeholder="输入你的 DeepSeek API Key..."
-            style={{ width: '100%', padding: '8px 10px', border: '1px solid #d9d9d9', borderRadius: 6, fontSize: 12, boxSizing: 'border-box' }}
+            style={{ width: '100%', padding: '8px 10px', border: '1px solid #93c5fd', borderRadius: 6, fontSize: 12, boxSizing: 'border-box', background: '#fff' }}
           />
-          <div style={{ fontSize: 10, color: '#999', marginTop: 4 }}>Key 仅在本地存储，不会上传到服务器</div>
+          <div style={{ fontSize: 10, color: '#2563eb', marginTop: 4 }}>
+            Key 仅存本地，不上传服务器
+          </div>
         </div>
       )}
 
